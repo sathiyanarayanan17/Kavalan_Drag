@@ -1,3 +1,90 @@
+# KAVALAN (காவலன்) — AI-Powered Forensic Triage & Postmortem Intelligence
+
+> _Guardian of the Investigation._ An explainable forensic triage system that
+> assists investigators — and tells them how confident it is.
+
+[![tests](https://img.shields.io/badge/tests-23%20passing-brightgreen)]()
+[![build](https://img.shields.io/badge/build-passing-brightgreen)]()
+
+## What makes it different (novelty)
+
+- **Method-disagreement / uncertainty flagging** — when the ML model, the rule
+  engine, and the LLM disagree on manner of death, that disagreement is
+  surfaced as an *uncertainty flag* recommending human review. The system tells
+  you not just its answer, but how much its own methods agree.
+- **Time-of-death window correlation** — automatically cross-references the
+  estimated TOD window against digital-evidence timestamps and flags the events
+  that fall *inside* it: the critical-window leads.
+- **Tamper-evident chain of custody** — every analysis/evidence action is
+  cryptographically hash-chained (SHA-256). Any alteration of a past record
+  breaks the chain and is detectable — a real admissibility requirement.
+- **Counterfactual risk explanations** — e.g. "risk would drop to MEDIUM by
+  completing the autopsy" — actionable, explainable next steps.
+
+## Core capabilities
+
+| Capability | Method |
+|-----------|--------|
+| Autopsy manner-of-death | Neural NLP model (99.8%) + rules + optional LLM, with disagreement detection |
+| Time-of-death | Henssge nomogram (published forensic math) |
+| Digital anomaly detection | XGBoost model (96.7%) |
+| Risk scoring | Auditable formula + LightGBM (98.4%) + counterfactuals |
+| Suspect/evidence graph | Relationship graph per case |
+| Cross-case correlation | Shared subjects/locations/sources across cases |
+| Cross-case search | Full-text-ish search over all records |
+| Export | Printable PDF report + CSV |
+| Auth | PBKDF2-hashed passwords, roles (supervisor/analyst/readonly) |
+| Audit | Tamper-evident chain of custody |
+
+## Quick start
+
+```bash
+npm install
+pip install -r ml/requirements.txt
+python ml/train_all.py          # train the ML suite (one command)
+
+python ml/service.py            # terminal 1 — ML API (or start-ml.bat)
+npm run dev                     # terminal 2 — app → http://localhost:4000
+```
+
+Sign in with a demo account:
+
+| Username | Password | Role |
+|----------|----------|------|
+| supervisor | supervisor | full (incl. delete) |
+| analyst | analyst | run analyses + view |
+| viewer | viewer | read-only |
+
+### Tests
+
+```bash
+npm test     # 23 Vitest tests: auth, risk, uncertainty, chain-of-custody
+```
+
+### Docker
+
+```bash
+export AUTH_SECRET="$(openssl rand -hex 32)"
+docker compose up --build       # app on :4000, ML service internal
+```
+
+See **`DEPLOYMENT.md`** for the production hardening checklist, **`ml/README.md`**
+for the model suite, and **`ml/INTEGRATION.md`** for how ML is wired in.
+
+## Honest scope
+
+The ML models are trained on large **synthetic** datasets generated from the
+app's own vocabulary and rule logic (the shipped database has only demo cases).
+Reported accuracies measure generalisation across that space — **not** validated
+real-world forensic accuracy. Consistent with the project's ethic: the tool
+**assists and explains; it does not decide.** All outputs require review by
+qualified professionals.
+
+---
+
+<details>
+<summary>Original detailed documentation (architecture, schema, API reference)</summary>
+
 # AIVENTRA
 
 ## AI-Powered Forensic Triage & Postmortem Intelligence System
@@ -780,3 +867,5 @@ AIVENTRA demonstrates that a small team (or a single developer) can ship a coher
 ---
 
 _Built with precision. Deployed with purpose. AIVENTRA — forensic intelligence for the modern investigator._
+
+</details>

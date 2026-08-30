@@ -496,6 +496,9 @@ export default function CaseOverviewPage() {
 						</div>
 					</section>
 
+					{/* Chain-of-custody integrity + TOD-window correlation */}
+					<CustodyInsight caseId={id as string} />
+
 					{/* Quick Actions */}
 					<section>
 						<h3
@@ -576,5 +579,72 @@ export default function CaseOverviewPage() {
 				</div>
 			</div>
 		</motion.div>
+	);
+}
+
+function CustodyInsight({ caseId }: { caseId: string }) {
+	const [custody, setCustody] = useState<{
+		integrity: { intact: boolean; length: number; reason?: string };
+	} | null>(null);
+	const [tod, setTod] = useState<{
+		hasTod: boolean;
+		summary?: string;
+		insideWindow?: unknown[];
+	} | null>(null);
+
+	useEffect(() => {
+		if (!caseId) return;
+		fetch(`/api/cases/${caseId}/custody`)
+			.then((r) => r.json())
+			.then(setCustody)
+			.catch(() => {});
+		fetch(`/api/cases/${caseId}/tod-correlation`)
+			.then((r) => r.json())
+			.then(setTod)
+			.catch(() => {});
+	}, [caseId]);
+
+	return (
+		<section
+			style={{
+				border: "1px solid var(--border)",
+				borderRadius: "4px",
+				padding: "12px",
+				background: "var(--bg-surface-1)",
+			}}
+		>
+			<h3
+				className="font-mono text-xs uppercase mb-2"
+				style={{ color: "var(--text-dim)", letterSpacing: "0.1em" }}
+			>
+				INTEGRITY & INSIGHT
+			</h3>
+
+			{custody && (
+				<p
+					className="font-mono text-xs mb-2"
+					style={{
+						color: custody.integrity.intact
+							? "var(--low, #5ae0a0)"
+							: "var(--critical, #e05a5a)",
+					}}
+				>
+					{custody.integrity.intact
+						? `● CHAIN OF CUSTODY INTACT (${custody.integrity.length} records)`
+						: `⚠ CUSTODY CHAIN BROKEN — ${custody.integrity.reason}`}
+				</p>
+			)}
+
+			{tod && (
+				<p
+					className="font-sans text-xs"
+					style={{ color: "var(--text-dim)" }}
+				>
+					{tod.hasTod
+						? tod.summary
+						: "TOD window correlation available after running a TOD estimate."}
+				</p>
+			)}
+		</section>
 	);
 }

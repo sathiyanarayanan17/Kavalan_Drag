@@ -121,14 +121,45 @@ export async function PATCH(
 }
 
 export async function DELETE(
-	_request: NextRequest,
+	request: NextRequest,
 	{ params }: { params: { id: string } },
 ) {
 	try {
 		const { id } = params;
+		// Defense-in-depth: only SUPERVISOR may delete a case.
+		const { COOKIE_NAME, verifySession } = await import("@/lib/auth");
+		const session = await verifySession(
+			request.cookies.get(COOKIE_NAME)?.value,
+		);
+		if (!session || session.role !== "SUPERVISOR") {
+			return NextResponse.json(
+				{ error: "Forbidden — only SUPERVISOR may delete cases" },
+				{ status: 403 },
+			);
+		}
 		if (!db.prepare("SELECT id FROM cases WHERE id = ?").get(id))
 			return NextResponse.json({ error: "Case not found" }, { status: 404 });
-		db.prepare("DELETE FROM cases WHERE id = ?").run(id);
+
+		// Remove the case and all related records atomically.
+		const tx = db.transaction(() => {
+			for (const table of [
+				"evidence",
+				"digital_evidence",
+				"autopsy_reports",
+				"tod_estimates",
+				"case_activities",
+				"custody_log",
+			]) {
+				try {
+					db.prepare(`DELETE FROM ${table} WHERE caseId = ?`).run(id);
+				} catch {
+					// table may not exist yet (e.g. custody_log) — ignore
+				}
+			}
+			db.prepare("DELETE FROM cases WHERE id = ?").run(id);
+		});
+		tx();
+
 		return NextResponse.json({ success: true, id });
 	} catch (error) {
 		return NextResponse.json({ error: String(error) }, { status: 500 });

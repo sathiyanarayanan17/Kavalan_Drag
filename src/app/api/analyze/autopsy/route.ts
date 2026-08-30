@@ -3,6 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { analyzeAutopsyReport } from "@/lib/ai-engine";
 import { mlAutopsy } from "@/lib/ml-client";
+import { assessDisagreement } from "@/lib/uncertainty";
+import { appendCustody } from "@/lib/custody";
 import { randomUUID } from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -70,6 +72,8 @@ export async function POST(request: NextRequest) {
 		// service is available and more confident than the base engine, adopt
 		// its classification and annotate the notes. On any failure this is a
 		// no-op and the base engine result stands.
+		const baseManner = result.mannerOfDeath; // rule/LLM opinion (pre-ML)
+		const baseConfidence = (result.confidence ?? 0) / 100;
 		let mlSource = "rule-based/Claude engine";
 		const ml = await mlAutopsy(trimmedReport);
 		if (ml && ml.mannerOfDeath) {
@@ -82,6 +86,23 @@ export async function POST(request: NextRequest) {
 			result.analysisNotes =
 				`${result.analysisNotes}\n\n[ML] Manner-of-death classifier: ${ml.mannerOfDeath} ` +
 				`(${mlConfidencePct}% confidence). Source of record: ${mlSource}.`;
+		}
+
+		// Method-disagreement detection: compare the base engine and the ML
+		// model. Disagreement is itself signal — flag it for human review.
+		const opinions = [
+			{ method: "rule/LLM engine", value: baseManner, confidence: baseConfidence },
+		];
+		if (ml && ml.mannerOfDeath)
+			opinions.push({
+				method: "ML model",
+				value: ml.mannerOfDeath,
+				confidence: ml.confidence,
+			});
+		const disagreement = assessDisagreement(opinions);
+		if (disagreement.flagged) {
+			result.analysisNotes =
+				`${result.analysisNotes}\n\n[UNCERTAINTY: ${disagreement.uncertainty}] ${disagreement.note}`;
 		}
 
 		const id = `aut-${randomUUID().slice(0, 8)}`;
@@ -125,7 +146,26 @@ export async function POST(request: NextRequest) {
 			agent: "KAVALAN AI Engine",
 		});
 
-		return NextResponse.json({ id, caseId, analyzedAt, ...result });
+		// Tamper-evident custody record.
+		appendCustody(
+			caseId,
+			"AUTOPSY_ANALYZED",
+			`COD: ${result.causeOfDeath}; Manner: ${result.mannerOfDeath}; uncertainty: ${disagreement.uncertainty}`,
+		);
+
+		return NextResponse.json({
+			id,
+			caseId,
+			analyzedAt,
+			...result,
+			uncertainty: {
+				level: disagreement.uncertainty,
+				agreement: disagreement.agreement,
+				flagged: disagreement.flagged,
+				note: disagreement.note,
+				opinions: disagreement.opinions,
+			},
+		});
 	} catch (error) {
 		return NextResponse.json({ error: String(error) }, { status: 500 });
 	}

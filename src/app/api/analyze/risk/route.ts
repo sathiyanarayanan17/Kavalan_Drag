@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calculateRiskScore } from "@/lib/ai-engine";
 import { mlRisk } from "@/lib/ml-client";
+import { appendCustody } from "@/lib/custody";
 import type { Case } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -114,7 +115,51 @@ export async function POST(request: NextRequest) {
 			id: caseId,
 		});
 
-		return NextResponse.json({ caseId, ...result });
+		// Counterfactual explanations: what single change would most reduce the
+		// tier? Uses the auditable formula so it is explainable and honest.
+		const counterfactuals: string[] = [];
+		if (result.tier !== "LOW") {
+			const ageHours =
+				(Date.now() - new Date(caseRow.dateCreated).getTime()) / 3600000;
+			const baseInput = {
+				caseId,
+				evidenceCount: caseRow.evidenceCount,
+				suspectCount: caseRow.suspectCount,
+				digitalAnomalyCount,
+				hasAutopsy: !!autopsyRow,
+				hasTodEstimate,
+				mannerOfDeath: autopsyRow?.mannerOfDeath,
+				openTimelinGaps,
+				caseAgeHours: ageHours,
+			};
+			const scenarios: Array<{ label: string; patch: Partial<typeof baseInput> }> = [];
+			if (!autopsyRow)
+				scenarios.push({ label: "completing the autopsy", patch: { hasAutopsy: true } });
+			if (!hasTodEstimate)
+				scenarios.push({
+					label: "completing the TOD estimate",
+					patch: { hasTodEstimate: true },
+				});
+			for (const s of scenarios) {
+				const alt = calculateRiskScore({ ...baseInput, ...s.patch });
+				if (alt.tier !== result.tier || alt.overall < result.overall) {
+					counterfactuals.push(
+						`Risk would drop to ${alt.tier} (${alt.overall}/100) by ${s.label}.`,
+					);
+				}
+			}
+		}
+		if (counterfactuals.length > 0) {
+			result.recommendations = [...result.recommendations, ...counterfactuals];
+		}
+
+		appendCustody(
+			caseId,
+			"RISK_SCORED",
+			`Tier: ${result.tier}; Score: ${result.overall}/100; source: ${tierSource}`,
+		);
+
+		return NextResponse.json({ caseId, ...result, counterfactuals });
 	} catch (error) {
 		return NextResponse.json({ error: String(error) }, { status: 500 });
 	}
