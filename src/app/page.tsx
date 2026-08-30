@@ -10,6 +10,7 @@ import StatsStrip from "@/components/dashboard/StatsStrip";
 import RiskDistribution from "@/components/dashboard/RiskDistribution";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import CasePipeline from "@/components/dashboard/CasePipeline";
+import AlertsWidget from "@/components/dashboard/AlertsWidget";
 import { Button } from "@/components/ui/Button";
 import type { Case, CaseActivity } from "@/types";
 
@@ -97,6 +98,11 @@ export default function DashboardPage() {
 			>
 				{/* Row 1: Stats Strip */}
 				<StatsStrip cases={cases} />
+
+				{/* Alerts + batch triage */}
+				<div className="mt-6">
+					<AlertsWidget />
+				</div>
 
 				{/* Row 2: Risk Distribution + Case Pipeline */}
 				<div className="mt-6 grid grid-cols-3 gap-6">

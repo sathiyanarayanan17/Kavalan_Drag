@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Shield, LayoutDashboard, FolderOpen, Plus, Database, Map, GitMerge, LogOut, Search } from "lucide-react";
+import { Shield, LayoutDashboard, FolderOpen, Plus, Database, Map, GitMerge, LogOut, Search, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
 	{ label: "New Case", href: "/cases/new", icon: Plus },
 	{ label: "Search", href: "/search", icon: Search },
 	{ label: "Correlation", href: "/correlate", icon: GitMerge },
+	{ label: "Models", href: "/models", icon: Brain },
 	{ label: "Intel Map", href: "/map", icon: Map },
 	{ label: "Inspector", href: "/inspect", icon: Database },
 ] as const;

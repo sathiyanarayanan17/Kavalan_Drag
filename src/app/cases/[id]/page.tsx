@@ -493,6 +493,9 @@ export default function CaseOverviewPage() {
 							<Button variant="secondary" href={`/cases/${id}/graph`}>
 								SUSPECT / EVIDENCE GRAPH
 							</Button>
+							<Button variant="secondary" href={`/cases/${id}/custody`}>
+								CHAIN OF CUSTODY
+							</Button>
 						</div>
 					</section>
 
