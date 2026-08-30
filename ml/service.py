@@ -215,6 +215,9 @@ def _clean(name: str) -> str:
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8008)
+    host = os.environ.get("ML_HOST", "127.0.0.1")
+    port = int(os.environ.get("ML_PORT", "8008"))
+    uvicorn.run(app, host=host, port=port)

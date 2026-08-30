@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+data
+*.log
+ml/models/*.joblib
+ml/models/*.pt
+ml/data
+__pycache__
+*.pyc
+.env.local
+.env.*.local
+tsconfig.tsbuildinfo

@@ -1,0 +1,36 @@
+services:
+  ml:
+    build:
+      context: .
+      dockerfile: Dockerfile.ml
+    environment:
+      - ML_HOST=0.0.0.0
+      - ML_PORT=8008
+    expose:
+      - "8008"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8008/health').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      # Point the app at the ML service on the compose network.
+      - ML_SERVICE_URL=http://ml:8008
+      # CHANGE THIS in a real deployment.
+      - AUTH_SECRET=${AUTH_SECRET:-please-change-me-in-production}
+    ports:
+      - "4000:4000"
+    volumes:
+      - kavalan-data:/app/data
+    depends_on:
+      - ml
+
+volumes:
+  kavalan-data:
