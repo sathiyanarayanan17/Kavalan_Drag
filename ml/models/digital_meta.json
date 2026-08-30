@@ -1,0 +1,15 @@
+{
+  "accuracy": 0.9665,
+  "roc_auc": 0.9880082339825789,
+  "macro_f1": 0.889458391029301,
+  "features": [
+    "hour",
+    "temporalDeviation",
+    "novelLocation",
+    "burstCount",
+    "frequencyDeviation",
+    "subjectDiversity",
+    "confidence",
+    "sourceType"
+  ]
+}

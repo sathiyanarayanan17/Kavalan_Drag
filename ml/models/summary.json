@@ -1,0 +1,47 @@
+{
+  "autopsy": {
+    "in_dim": 1268,
+    "n_classes": 5,
+    "classes": [
+      "ACCIDENTAL",
+      "HOMICIDE",
+      "NATURAL",
+      "SUICIDE",
+      "UNDETERMINED"
+    ],
+    "accuracy": 0.9983333333333333,
+    "macro_f1": 0.9980474985648516,
+    "params": 816389
+  },
+  "digital": {
+    "accuracy": 0.9665,
+    "roc_auc": 0.9880082339825789,
+    "macro_f1": 0.889458391029301,
+    "features": [
+      "hour",
+      "temporalDeviation",
+      "novelLocation",
+      "burstCount",
+      "frequencyDeviation",
+      "subjectDiversity",
+      "confidence",
+      "sourceType"
+    ]
+  },
+  "risk": {
+    "accuracy": 0.98375,
+    "macro_f1": 0.9687742887450308,
+    "cv_accuracy_mean": 0.98125,
+    "cv_accuracy_std": 0.0028895690638917055,
+    "features": [
+      "evidenceCount",
+      "suspectCount",
+      "digitalAnomalyCount",
+      "hasAutopsy",
+      "hasTodEstimate",
+      "openTimelineGaps",
+      "caseAgeHours",
+      "mannerOfDeath"
+    ]
+  }
+}

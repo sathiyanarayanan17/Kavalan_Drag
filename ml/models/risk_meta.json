@@ -1,0 +1,16 @@
+{
+  "accuracy": 0.98375,
+  "macro_f1": 0.9687742887450308,
+  "cv_accuracy_mean": 0.98125,
+  "cv_accuracy_std": 0.0028895690638917055,
+  "features": [
+    "evidenceCount",
+    "suspectCount",
+    "digitalAnomalyCount",
+    "hasAutopsy",
+    "hasTodEstimate",
+    "openTimelineGaps",
+    "caseAgeHours",
+    "mannerOfDeath"
+  ]
+}

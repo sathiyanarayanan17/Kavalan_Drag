@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calculateRiskScore } from "@/lib/ai-engine";
+import { mlRisk } from "@/lib/ml-client";
 import type { Case } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -60,6 +61,50 @@ export async function POST(request: NextRequest) {
 			caseAgeHours:
 				(Date.now() - new Date(caseRow.dateCreated).getTime()) / 3600000,
 		});
+
+		// Cross-check the tier with the trained ML risk model. The numeric
+		// score + factor breakdown always come from the auditable formula; the
+		// ML model provides a learned second opinion on the tier. On any
+		// failure this is a no-op.
+		let tierSource = "formula";
+		const ml = await mlRisk({
+			evidenceCount: caseRow.evidenceCount,
+			suspectCount: caseRow.suspectCount,
+			digitalAnomalyCount,
+			hasAutopsy: autopsyRow ? 1 : 0,
+			hasTodEstimate: hasTodEstimate ? 1 : 0,
+			mannerOfDeath: autopsyRow?.mannerOfDeath ?? "UNDETERMINED",
+			openTimelineGaps: openTimelinGaps,
+			caseAgeHours:
+				(Date.now() - new Date(caseRow.dateCreated).getTime()) / 3600000,
+		});
+		if (ml && ml.riskTier && ml.confidence >= 0.6) {
+			result.tier = ml.riskTier;
+			tierSource = `KAVALAN ML model (${Math.round(ml.confidence * 100)}% confidence)`;
+			if (typeof ml.predictedScore === "number") {
+				result.overall = Math.round(ml.predictedScore);
+			}
+			const explain = (ml.explanation ?? [])
+				.slice(0, 3)
+				.map(
+					(e) =>
+						`${e.feature} (${e.contribution >= 0 ? "+" : ""}${e.contribution})`,
+				)
+				.join(", ");
+			result.recommendations = [
+				`Risk tier confirmed by ${tierSource}.`,
+				...(explain ? [`Top drivers: ${explain}.`] : []),
+				...result.recommendations,
+			];
+		} else if (ml && ml.riskTier) {
+			// Low-confidence ML prediction — defer to the auditable formula but
+			// surface the disagreement for the analyst.
+			tierSource = "formula (ML low-confidence, deferred)";
+			result.recommendations = [
+				`ML model suggested ${ml.riskTier} at ${Math.round(ml.confidence * 100)}% — below threshold, formula tier retained.`,
+				...result.recommendations,
+			];
+		}
 
 		db.prepare(
 			"UPDATE cases SET riskScore = $riskScore, riskLevel = $riskLevel WHERE id = $id",

@@ -1,0 +1,6 @@
+# ML artifacts
+data/*.csv
+models/*.joblib
+models/*.pt
+__pycache__/
+*.pyc

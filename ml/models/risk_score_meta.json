@@ -1,0 +1,15 @@
+{
+  "mae": 0.15631684578913121,
+  "rmse": 0.2322338862647588,
+  "r2": 0.9996175728338264,
+  "features": [
+    "evidenceCount",
+    "suspectCount",
+    "digitalAnomalyCount",
+    "hasAutopsy",
+    "hasTodEstimate",
+    "openTimelineGaps",
+    "caseAgeHours",
+    "mannerOfDeath"
+  ]
+}

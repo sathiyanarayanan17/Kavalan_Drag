@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { analyzeAutopsyReport } from "@/lib/ai-engine";
+import { mlAutopsy } from "@/lib/ml-client";
 import { randomUUID } from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -64,6 +65,24 @@ export async function POST(request: NextRequest) {
 			rigorMortisStage,
 			livorMortisState,
 		});
+
+		// Enhance with the trained ML manner-of-death classifier. If the ML
+		// service is available and more confident than the base engine, adopt
+		// its classification and annotate the notes. On any failure this is a
+		// no-op and the base engine result stands.
+		let mlSource = "rule-based/Claude engine";
+		const ml = await mlAutopsy(trimmedReport);
+		if (ml && ml.mannerOfDeath) {
+			const mlConfidencePct = Math.round(ml.confidence * 100);
+			if (ml.confidence >= (result.confidence ?? 0) / 100) {
+				result.mannerOfDeath = ml.mannerOfDeath as typeof result.mannerOfDeath;
+				result.confidence = Math.max(result.confidence ?? 0, mlConfidencePct);
+				mlSource = "KAVALAN ML model (neural classifier)";
+			}
+			result.analysisNotes =
+				`${result.analysisNotes}\n\n[ML] Manner-of-death classifier: ${ml.mannerOfDeath} ` +
+				`(${mlConfidencePct}% confidence). Source of record: ${mlSource}.`;
+		}
 
 		const id = `aut-${randomUUID().slice(0, 8)}`;
 		const analyzedAt = new Date().toISOString();

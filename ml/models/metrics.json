@@ -1,0 +1,50 @@
+{
+  "test_samples": 4000,
+  "accuracy": 0.9695,
+  "macro_f1": 0.9423316828952784,
+  "cv_accuracy_mean": 0.9688749999999999,
+  "cv_accuracy_std": 0.002504683113689234,
+  "fit_seconds": 7.360866069793701,
+  "labels": [
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "CRITICAL"
+  ],
+  "confusion_matrix": [
+    [
+      237,
+      22,
+      0,
+      0
+    ],
+    [
+      14,
+      1976,
+      31,
+      0
+    ],
+    [
+      0,
+      32,
+      1571,
+      7
+    ],
+    [
+      0,
+      0,
+      16,
+      94
+    ]
+  ],
+  "feature_order": [
+    "evidenceCount",
+    "suspectCount",
+    "digitalAnomalyCount",
+    "hasAutopsy",
+    "hasTodEstimate",
+    "openTimelineGaps",
+    "caseAgeHours",
+    "mannerOfDeath"
+  ]
+}

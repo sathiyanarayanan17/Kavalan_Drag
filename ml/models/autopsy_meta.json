@@ -1,0 +1,14 @@
+{
+  "in_dim": 1268,
+  "n_classes": 5,
+  "classes": [
+    "ACCIDENTAL",
+    "HOMICIDE",
+    "NATURAL",
+    "SUICIDE",
+    "UNDETERMINED"
+  ],
+  "accuracy": 0.9983333333333333,
+  "macro_f1": 0.9980474985648516,
+  "params": 816389
+}

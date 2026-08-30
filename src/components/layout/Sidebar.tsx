@@ -1,20 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Shield, LayoutDashboard, FolderOpen, Plus, Database, Map } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Shield, LayoutDashboard, FolderOpen, Plus, Database, Map, GitMerge, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
 	{ label: "Dashboard", href: "/", icon: LayoutDashboard },
 	{ label: "Cases", href: "/cases", icon: FolderOpen },
 	{ label: "New Case", href: "/cases/new", icon: Plus },
+	{ label: "Correlation", href: "/correlate", icon: GitMerge },
 	{ label: "Intel Map", href: "/map", icon: Map },
 	{ label: "Inspector", href: "/inspect", icon: Database },
 ] as const;
 
 export default function Sidebar() {
 	const pathname = usePathname();
+	const router = useRouter();
+	const [session, setSession] = useState<{ username: string; role: string } | null>(
+		null,
+	);
+
+	useEffect(() => {
+		fetch("/api/auth/me")
+			.then((r) => r.json())
+			.then((d) => {
+				if (d.authenticated) setSession({ username: d.username, role: d.role });
+			})
+			.catch(() => {});
+	}, [pathname]);
+
+	const logout = async () => {
+		await fetch("/api/auth/logout", { method: "POST" });
+		router.push("/login");
+		router.refresh();
+	};
 
 	return (
 		<nav
@@ -71,11 +92,21 @@ export default function Sidebar() {
 				})}
 			</ul>
 
-			{/* Bottom console badge */}
+			{/* Bottom console badge + session */}
 			<div className="px-5 py-4 border-t border-border-DEFAULT">
 				<p className="font-mono text-xs uppercase tracking-wider text-dim">
-					ANALYST CONSOLE
+					{session ? `${session.username} · ${session.role}` : "ANALYST CONSOLE"}
 				</p>
+				{session && (
+					<button
+						onClick={logout}
+						className="mt-2 flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted hover:text-data"
+						style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+					>
+						<LogOut size={12} strokeWidth={1.5} aria-hidden="true" />
+						Sign out
+					</button>
+				)}
 			</div>
 		</nav>
 	);

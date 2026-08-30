@@ -69,6 +69,12 @@ export default function CaseOverviewPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [analyzingRisk, setAnalyzingRisk] = useState(false);
+	const [riskResult, setRiskResult] = useState<{
+		overall: number;
+		tier: string;
+		recommendations?: string[];
+		anomalies?: string[];
+	} | null>(null);
 
 	const loadCase = async () => {
 		if (!id) return;
@@ -100,17 +106,18 @@ export default function CaseOverviewPage() {
 			});
 			if (!res.ok) throw new Error("Risk analysis failed");
 			const result = await res.json();
-			if (caseData) {
-				setCaseData((prev) =>
-					prev
-						? {
-								...prev,
-								riskScore: result.riskSummary?.overall ?? prev.riskScore,
-								riskLevel: result.riskSummary?.tier ?? prev.riskLevel,
-							}
-						: prev,
-				);
-			}
+			// API returns a flat shape: { caseId, overall, tier, factors,
+			// anomalies, recommendations }.
+			setRiskResult(result);
+			setCaseData((prev) =>
+				prev
+					? {
+							...prev,
+							riskScore: result.overall ?? prev.riskScore,
+							riskLevel: result.tier ?? prev.riskLevel,
+						}
+					: prev,
+			);
 		} catch (err) {
 			console.error("Risk analysis error:", err);
 		} finally {
@@ -428,6 +435,66 @@ export default function CaseOverviewPage() {
 							{analyzingRisk ? "ANALYZING..." : "RISK ANALYSIS"}
 						</button>
 					</div>
+
+					{/* ML Risk Insight */}
+					{riskResult && (
+						<section
+							style={{
+								border: "1px solid var(--border)",
+								borderRadius: "4px",
+								padding: "12px",
+								background: "var(--bg-surface-1)",
+							}}
+						>
+							<h3
+								className="font-mono text-xs uppercase mb-2"
+								style={{ color: "var(--text-dim)", letterSpacing: "0.1em" }}
+							>
+								AI RISK ASSESSMENT
+							</h3>
+							<p
+								className="font-mono text-sm mb-2"
+								style={{ color: "var(--text-data)" }}
+							>
+								{riskResult.tier} · {riskResult.overall}/100
+							</p>
+							{(riskResult.recommendations ?? []).slice(0, 4).map((r, i) => (
+								<p
+									key={i}
+									className="font-sans text-xs mb-1"
+									style={{ color: "var(--text-dim)" }}
+								>
+									• {r}
+								</p>
+							))}
+						</section>
+					)}
+
+					{/* Export */}
+					<section>
+						<h3
+							className="font-mono text-xs uppercase mb-3"
+							style={{
+								color: "var(--text-dim)",
+								letterSpacing: "0.1em",
+								borderBottom: "1px solid var(--border)",
+								paddingBottom: "8px",
+							}}
+						>
+							EXPORT & TOOLS
+						</h3>
+						<div className="flex flex-col gap-2">
+							<Button variant="secondary" href={`/api/cases/${id}/export?format=html`}>
+								EXPORT REPORT (PDF)
+							</Button>
+							<Button variant="secondary" href={`/api/cases/${id}/export?format=csv`}>
+								EXPORT DATA (CSV)
+							</Button>
+							<Button variant="secondary" href={`/cases/${id}/graph`}>
+								SUSPECT / EVIDENCE GRAPH
+							</Button>
+						</div>
+					</section>
 
 					{/* Quick Actions */}
 					<section>
